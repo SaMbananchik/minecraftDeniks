@@ -1,31 +1,45 @@
-// ===== ХРАНИЛИЩЕ ЧЕРЕЗ GITHUB API (публичный репозиторий) =====
-// Настройки – укажите свои
-const GITHUB_OWNER = 'SaMbananchik';      // например 'ivanov'
-const GITHUB_REPO = 'minecraftDeniks'; // например 'minecraft-economy'
-const FILE_PATH = 'info.json';
-
+// ===== ХРАНИЛИЩЕ ЧЕРЕЗ GITHUB GIST =====
+// Настройки (укажите свой логин)
+const GITHUB_USERNAME = 'ВАШ_ЛОГИН';  // например 'ivanov'
+let GIST_ID = localStorage.getItem('minecraft_gist_id');
 let GITHUB_TOKEN = localStorage.getItem('github_token') || '';
 
-// Получение SHA файла (нужен для обновления)
-async function getCurrentFileSha() {
-    const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${FILE_PATH}`;
-    const headers = GITHUB_TOKEN ? { 'Authorization': `token ${GITHUB_TOKEN}` } : {};
-    const res = await fetch(url, { headers });
-    if (res.status === 404) return null;
-    if (!res.ok) throw new Error('Ошибка получения SHA');
-    const data = await res.json();
-    return data.sha;
+// Создание нового gist (только при первом сохранении)
+async function createGist(data) {
+    const url = 'https://api.github.com/gists';
+    const body = {
+        description: 'Minecraft Economy Data',
+        public: true,  // публичный – друзья смогут читать без токена
+        files: {
+            'info.json': { content: JSON.stringify(data, null, 2) }
+        }
+    };
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Authorization': `token ${GITHUB_TOKEN}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error('Ошибка создания gist');
+    const json = await res.json();
+    GIST_ID = json.id;
+    localStorage.setItem('minecraft_gist_id', GIST_ID);
+    return GIST_ID;
 }
 
-// Загрузка данных (без токена – для публичных репозиториев)
+// Загрузка данных из gist (не требует токена, если gist публичный)
 async function loadFromCloud() {
+    if (!GIST_ID) return { players: [], rulesTabs: [] };
     try {
-        const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${FILE_PATH}`;
+        const url = `https://api.github.com/gists/${GIST_ID}`;
         const res = await fetch(url);
         if (res.status === 404) return { players: [], rulesTabs: [] };
-        if (!res.ok) throw new Error('Ошибка загрузки');
+        if (!res.ok) throw new Error('Ошибка загрузки gist');
         const data = await res.json();
-        const content = atob(data.content);
+        const content = data.files['info.json']?.content;
+        if (!content) return { players: [], rulesTabs: [] };
         return JSON.parse(content);
     } catch (e) {
         console.error(e);
@@ -37,14 +51,13 @@ async function loadFromCloud() {
 async function saveToCloudFull(data) {
     if (!GITHUB_TOKEN) {
         const token = prompt(
-            'Для сохранения данных нужен GitHub Personal Access Token.\n\n' +
+            'Для сохранения нужен GitHub Personal Access Token.\n\n' +
             'Как получить:\n' +
             '1. GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)\n' +
             '2. Generate new token (classic)\n' +
             '3. Название: MinecraftEconomy, срок: No expiration\n' +
-            '4. Поставьте галочку repo\n' +
-            '5. Generate token\n' +
-            '6. Скопируйте токен и вставьте сюда'
+            '4. Поставьте галочку gist (это важно!)\n' +
+            '5. Generate token → скопируйте'
         );
         if (token) {
             GITHUB_TOKEN = token;
@@ -54,24 +67,29 @@ async function saveToCloudFull(data) {
             return false;
         }
     }
+
     try {
-        const sha = await getCurrentFileSha();
-        const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
-        const body = {
-            message: 'Update economy data',
-            content: content,
-            sha: sha || undefined
-        };
-        const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${FILE_PATH}`;
-        const res = await fetch(url, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `token ${GITHUB_TOKEN}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(body)
-        });
-        if (!res.ok) throw new Error('Ошибка сохранения');
+        if (!GIST_ID) {
+            // Создаём новый gist
+            await createGist(data);
+        } else {
+            // Обновляем существующий gist
+            const url = `https://api.github.com/gists/${GIST_ID}`;
+            const body = {
+                files: {
+                    'info.json': { content: JSON.stringify(data, null, 2) }
+                }
+            };
+            const res = await fetch(url, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `token ${GITHUB_TOKEN}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(body)
+            });
+            if (!res.ok) throw new Error('Ошибка обновления gist');
+        }
         return true;
     } catch (e) {
         console.error(e);
@@ -81,7 +99,15 @@ async function saveToCloudFull(data) {
 }
 
 async function initStorage() {
-    // Для публичного репозитория просто проверяем доступ
+    // Просто проверяем, есть ли уже gist (не требуется токен)
+    try {
+        if (GIST_ID) {
+            await loadFromCloud(); // тест чтения
+        }
+        updateCloudStatus('online', 'Gist готов');
+    } catch(e) {
+        updateCloudStatus('offline', 'Ошибка доступа к gist');
+    }
     return true;
 }
 
@@ -93,5 +119,5 @@ function updateCloudStatus(status, message) {
     if (status === 'online') dot.classList.add('online');
     else if (status === 'offline') dot.classList.add('offline');
     else if (status === 'syncing') dot.classList.add('syncing');
-    if (text) text.textContent = message || (status === 'online' ? 'GitHub: онлайн' : '');
+    if (text) text.textContent = message || (status === 'online' ? 'Gist: онлайн' : '');
 }
