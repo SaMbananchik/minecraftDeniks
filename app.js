@@ -394,4 +394,8 @@ function setupTabs() {
     });
 }
 
+window.testSave = async function() {
+    await saveToCloudFull({ players: players, rulesTabs: rulesTabs });
+};
+
 init();
