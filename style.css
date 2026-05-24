@@ -1,4 +1,8 @@
-* { margin: 0; padding: 0; box-sizing: border-box; }
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
@@ -6,9 +10,11 @@ body {
     min-height: 100vh;
     padding: 20px;
 }
-.container { max-width: 1400px; margin: 0 auto; position: relative; }
-
-/* Виджет входа */
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    position: relative;
+}
 .login-widget {
     position: absolute;
     top: 20px;
@@ -38,9 +44,20 @@ body {
 .access-badge.admin { background: #4caf50; }
 .access-badge.user { background: #ff9800; }
 .access-badge.view { background: #f44336; }
-
-/* Табы */
-.tabs { display: flex; gap: 10px; justify-content: center; margin-bottom: 25px; }
+header { text-align: center; margin-bottom: 30px; }
+h1 {
+    background: linear-gradient(135deg, #ffd89b, #c7e9fb);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    font-size: 2.5rem;
+}
+.tabs {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 25px;
+}
 .tab-btn {
     background: rgba(255,255,255,0.1);
     border: none;
@@ -50,12 +67,13 @@ body {
     font-size: 16px;
     cursor: pointer;
 }
-.tab-btn.active { background: linear-gradient(135deg, #667eea, #764ba2); box-shadow: 0 0 15px rgba(102,126,234,0.5); }
+.tab-btn.active {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    box-shadow: 0 0 15px rgba(102,126,234,0.5);
+}
 .tab-content { display: none; }
 .tab-content.active { display: block; animation: fadeIn 0.3s; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-/* Облачный статус */
 .cloud-status {
     background: rgba(0,0,0,0.5);
     border-radius: 20px;
@@ -66,9 +84,14 @@ body {
     gap: 15px;
     justify-content: center;
 }
-.status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
 .status-dot.online { background: #4caf50; box-shadow: 0 0 5px #4caf50; }
-.status-dot.offline { background: #f44336; }
+.status-dot.offline { background: #f44336; box-shadow: 0 0 5px #f44336; }
 .status-dot.syncing { background: #ff9800; animation: pulse 1s infinite; }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
 .mini-btn, .btn-sm {
@@ -79,8 +102,6 @@ body {
     color: white;
     cursor: pointer;
 }
-
-/* Toolbar */
 .toolbar {
     display: flex;
     flex-wrap: wrap;
@@ -108,9 +129,6 @@ body {
     cursor: pointer;
 }
 .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102,126,234,0.4); }
-.btn-secondary { background: #3a3a4a; border: none; padding: 8px 20px; border-radius: 30px; color: white; cursor: pointer; }
-
-/* Статистика */
 .stats-grid {
     display: flex;
     justify-content: space-around;
@@ -128,8 +146,6 @@ body {
 }
 .stat-icon { font-size: 32px; }
 .stat-value { font-size: 28px; font-weight: bold; color: #ffd966; }
-
-/* Таблица */
 .table-container {
     background: rgba(255,255,255,0.05);
     backdrop-filter: blur(10px);
@@ -166,15 +182,17 @@ tr:hover { background: rgba(255,255,255,0.05); }
     border: none;
     font-size: 16px;
     cursor: pointer;
-    padding: 5px 8px;
+    padding: 5px;
     border-radius: 8px;
 }
 .action-edit { color: #ffd966; }
 .action-diamond { color: #4facfe; }
 .action-delete { color: #ff6b6b; }
-
-/* Вкладки правил */
-.rules-header { background: rgba(0,0,0,0.5); border-radius: 20px 20px 0 0; padding: 10px 20px; }
+.rules-header {
+    background: rgba(0,0,0,0.5);
+    border-radius: 20px 20px 0 0;
+    padding: 10px 20px;
+}
 .rules-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
 .rule-tab {
     background: rgba(255,255,255,0.1);
@@ -183,32 +201,30 @@ tr:hover { background: rgba(255,255,255,0.05); }
     border-radius: 20px;
     color: #eee;
     cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
 }
 .rule-tab.active { background: linear-gradient(135deg, #667eea, #764ba2); }
 .rule-tab .delete-tab {
     background: none;
     border: none;
     color: #ff6b6b;
+    margin-left: 8px;
     cursor: pointer;
-    font-weight: bold;
 }
 .rules-content-area {
     background: rgba(0,0,0,0.3);
     border-radius: 0 0 20px 20px;
     padding: 20px;
-    min-height: 300px;
 }
-.rules-editor { background: #1e1e2f; border-radius: 16px; padding: 20px; }
+.rules-editor {
+    background: #1e1e2f;
+    border-radius: 16px;
+    padding: 20px;
+}
 .color-red { color: #ff6b6b; }
 .color-green { color: #6bff6b; }
 .color-gold { color: #ffd966; }
 .color-cyan { color: #6bcfff; }
 .color-white { color: white; }
-
-/* Модалки */
 .modal {
     display: none;
     position: fixed;
@@ -228,10 +244,27 @@ tr:hover { background: rgba(255,255,255,0.05); }
     width: 500px;
     max-width: 90%;
 }
-.modal-header { display: flex; justify-content: space-between; padding: 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.1); }
-.close-modal { background: none; border: none; font-size: 28px; color: #aaa; cursor: pointer; }
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.close-modal {
+    background: none;
+    border: none;
+    font-size: 28px;
+    color: #aaa;
+    cursor: pointer;
+}
 .modal-body { padding: 24px; }
-.modal-footer { padding: 16px 24px; display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid rgba(255,255,255,0.1); }
+.modal-footer {
+    padding: 16px 24px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+}
 .form-group { margin-bottom: 20px; }
 .form-group label { display: block; margin-bottom: 6px; }
 .form-group input, .form-group select, .form-group textarea {
@@ -261,3 +294,7 @@ tr:hover { background: rgba(255,255,255,0.05); }
     z-index: 1100;
 }
 .toast.error { background: #dc3545; }
+@media (max-width: 700px) {
+    .toolbar { flex-direction: column; }
+    .stats-grid { flex-direction: column; }
+}

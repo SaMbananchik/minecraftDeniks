@@ -1,55 +1,64 @@
+// ===== ОСНОВНАЯ ЛОГИКА =====
 let players = [];
 let rulesTabs = [];
 let currentEditNick = null;
 let currentDiamondPlayer = null;
 let currentEditTabIndex = null;
 
-let accessLevel = 'view';
+let accessLevel = 'view';   // 'view', 'user', 'admin'
 let accessMessage = 'Режим просмотра';
 
-// Пароли: DonaldCapcap — полный доступ, QwertyTrump — только игроки (без алмазов)
+// Пароли: DonaldCapcap — полный доступ (admin), QwertyTrump — только игроки (user) без алмазов
 const PASSWORDS = {
-    'DonaldCapcap': { level: 'admin', allowDiamonds: true, allowFull: true },
-    'QwertyTrump': { level: 'user', allowDiamonds: false, allowFull: false }
+    'DonaldCapcap': { level: 'admin', canEditPlayers: true, canEditDiamonds: true, canEditRules: true },
+    'QwertyTrump': { level: 'user', canEditPlayers: true, canEditDiamonds: false, canEditRules: false }
 };
 
 const ESTATE_LIST = ['Крестьянин', 'Горожанин', 'Элит Горожанин', 'Дворянин', 'Высшая власть'];
-
-let appData = { players: [], rulesTabs: [] };
 
 // ===== ФУНКЦИИ ВХОДА =====
 function checkPassword(password) {
     const entry = PASSWORDS[password];
     if (!entry) return { success: false, level: 'view' };
-    return { success: true, level: entry.level, allowDiamonds: entry.allowDiamonds };
+    return { success: true, level: entry.level, canEditPlayers: entry.canEditPlayers, canEditDiamonds: entry.canEditDiamonds, canEditRules: entry.canEditRules };
 }
 
-function setAccess(level, allowDiamonds = false) {
+function setAccess(level, extra = {}) {
     accessLevel = level;
     if (level === 'admin') accessMessage = 'Полный доступ (админ)';
     else if (level === 'user') accessMessage = 'Доступ к игрокам (без алмазов)';
     else accessMessage = 'Режим просмотра';
     const badge = document.getElementById('accessBadge');
-    badge.textContent = `🔐 ${accessMessage}`;
-    badge.className = `access-badge ${level}`;
+    if (badge) {
+        badge.textContent = `🔐 ${accessMessage}`;
+        badge.className = `access-badge ${level}`;
+    }
     applyAccessRestrictions();
 }
 
 function applyAccessRestrictions() {
-    const isAdmin = accessLevel === 'admin';
-    const isUser = accessLevel === 'user';
-    const canEditPlayers = isAdmin || isUser;
+    const canEditPlayers = (accessLevel === 'admin' || accessLevel === 'user');
+    const canEditDiamonds = (accessLevel === 'admin');
+    const canEditRules = (accessLevel === 'admin');
+    
     const createBtn = document.getElementById('createBtn');
-    if (createBtn) createBtn.style.display = canEditPlayers ? 'block' : 'none';
+    if (createBtn) createBtn.style.display = canEditPlayers ? 'flex' : 'none';
+    
     const toolsDiv = document.getElementById('rulesEditTools');
-    if (toolsDiv) toolsDiv.style.display = isUser ? 'flex' : 'none';
-    renderTable();
+    if (toolsDiv) toolsDiv.style.display = canEditRules ? 'flex' : 'none';
+    
+    document.body.classList.toggle('view-mode', accessLevel === 'view');
+    document.body.classList.toggle('user-mode', accessLevel === 'user');
+    document.body.classList.toggle('admin-mode', accessLevel === 'admin');
+    
+    renderTable(); // перерисуем таблицу, чтобы скрыть/показать кнопки
+    renderRulesTabs(); // перерисуем вкладки правил
 }
 
 function login(password) {
     const result = checkPassword(password);
     if (result.success) {
-        setAccess(result.level, result.allowDiamonds);
+        setAccess(result.level);
         showToast(`Вход выполнен. Режим: ${accessMessage}`, 'success');
     } else {
         setAccess('view');
@@ -57,6 +66,7 @@ function login(password) {
     }
 }
 
+// Виджет входа
 document.getElementById('loginBtnWidget').onclick = () => {
     const pwd = document.getElementById('passwordInputWidget').value;
     login(pwd);
@@ -77,18 +87,13 @@ async function init() {
 window.refreshData = async function() {
     try {
         const cloudData = await loadFromCloud();
-        appData = {
-            players: cloudData.players || [],
-            rulesTabs: cloudData.rulesTabs || []
-        };
-        players = appData.players;
-        rulesTabs = appData.rulesTabs;
+        players = cloudData.players || [];
+        rulesTabs = cloudData.rulesTabs || [];
         if (!players.length) {
             players = [
                 { nickname: "sasha13131", estate: "Высшая власть", diamonds: 10000, licenses: ["Шахтёрская", "Строительная"] },
                 { nickname: "dimon2009", estate: "Дворянин", diamonds: 5000, licenses: ["Торговая"] }
             ];
-            appData.players = players;
             await saveToCloud();
         }
         if (!rulesTabs.length) {
@@ -96,43 +101,41 @@ window.refreshData = async function() {
                 { name: "Общие правила", content: "Добро пожаловать!\n\n[red]Запрещено[/red] гриферить.\n**Уважайте** других." },
                 { name: "Экономика", content: "Валюта – алмазы.\n[gold]Торгуйте[/gold]." }
             ];
-            appData.rulesTabs = rulesTabs;
             await saveToCloud();
         }
         renderTable();
         updateStats();
         renderRulesTabs();
         showToast('Данные загружены', 'success');
-    } catch (error) {
+    } catch (e) {
         showToast('Ошибка загрузки', 'error');
     }
 };
 
 async function saveToCloud() {
     try {
-        appData.players = players;
-        appData.rulesTabs = rulesTabs;
-        await saveToCloudFull(appData);
-        showToast('Сохранено в облако', 'success');
-    } catch (error) {
+        await saveToCloudFull({ players, rulesTabs });
+        showToast('Сохранено', 'success');
+    } catch (e) {
         showToast('Ошибка сохранения', 'error');
     }
 }
 
-// ===== УПРАВЛЕНИЕ ИГРОКАМИ =====
-function requireAuth(actionCallback, requiredLevel = 'any', allowDiamonds = false) {
-    if (accessLevel === 'admin') { actionCallback(); return; }
-    if (accessLevel === 'user' && requiredLevel !== 'admin') {
-        if (!allowDiamonds) { actionCallback(); return; }
-        else { showToast('Недостаточно прав для изменения алмазов', 'error'); return; }
+// ===== ИГРОКИ (CRUD) =====
+function requireAuth(action, needed = 'any') {
+    if (accessLevel === 'admin') { action(); return; }
+    if (accessLevel === 'user') {
+        if (needed === 'diamonds') { showToast('Недостаточно прав для изменения алмазов', 'error'); return; }
+        action();
+        return;
     }
-    showToast('Требуется вход с соответствующими правами', 'error');
+    showToast('Требуется вход', 'error');
 }
 
-function openCreateModal() { requireAuth(() => openCreateModalInternal(), 'user'); }
-function openEditModal(nick) { requireAuth(() => openEditModalInternal(nick), 'user'); }
-function deletePlayer(nick) { requireAuth(() => deletePlayerInternal(nick), 'user'); }
-function openDiamondModal(nick) { requireAuth(() => openDiamondModalInternal(nick), 'admin', true); }
+function openCreateModal() { requireAuth(() => openCreateModalInternal(), 'players'); }
+function openEditModal(nick) { requireAuth(() => openEditModalInternal(nick), 'players'); }
+function deletePlayer(nick) { requireAuth(() => deletePlayerInternal(nick), 'players'); }
+function openDiamondModal(nick) { requireAuth(() => openDiamondModalInternal(nick), 'diamonds'); }
 
 function openCreateModalInternal() {
     currentEditNick = null;
@@ -229,7 +232,7 @@ function setDiamonds() {
 function closeModal() { document.getElementById('playerModal').classList.remove('active'); }
 function closeDiamondModal() { document.getElementById('diamondModal').classList.remove('active'); }
 
-// ===== РЕНДЕР ТАБЛИЦЫ =====
+// ===== ТАБЛИЦА ИГРОКОВ =====
 function renderTable() {
     const search = document.getElementById('searchInput')?.value.toLowerCase() || '';
     const estateFilter = document.getElementById('estateFilter')?.value || 'all';
@@ -246,7 +249,8 @@ function renderTable() {
     });
     const tbody = document.getElementById('tableBody');
     if (!filtered.length) { tbody.innerHTML = '<tr><td colspan="6" class="loading">Нет игроков</td></tr>'; return; }
-    const canEdit = (accessLevel === 'admin' || accessLevel === 'user');
+    const canEditPlayers = (accessLevel === 'admin' || accessLevel === 'user');
+    const canEditDiamonds = (accessLevel === 'admin');
     tbody.innerHTML = filtered.map((p,i) => `
         <tr>
             <td>${i+1}</td>
@@ -255,9 +259,9 @@ function renderTable() {
             <td class="diamonds">${p.diamonds} 💎</td>
             <td>${p.licenses.map(l => `<span class="license">📜 ${escapeHtml(l)}</span>`).join('') || '❌'}</td>
             <td class="action-buttons">
-                ${canEdit ? `<button class="action-btn action-edit" onclick="openEditModal('${escapeHtml(p.nickname)}')">✏️</button>` : ''}
-                ${accessLevel === 'admin' ? `<button class="action-btn action-diamond" onclick="openDiamondModal('${escapeHtml(p.nickname)}')">💎</button>` : ''}
-                ${canEdit ? `<button class="action-btn action-delete" onclick="deletePlayer('${escapeHtml(p.nickname)}')">🗑️</button>` : ''}
+                ${canEditPlayers ? `<button class="action-btn action-edit" onclick="openEditModal('${escapeHtml(p.nickname)}')">✏️</button>` : ''}
+                ${canEditDiamonds ? `<button class="action-btn action-diamond" onclick="openDiamondModal('${escapeHtml(p.nickname)}')">💎</button>` : ''}
+                ${canEditPlayers ? `<button class="action-btn action-delete" onclick="deletePlayer('${escapeHtml(p.nickname)}')">🗑️</button>` : ''}
             </td>
         </tr>
     `).join('');
@@ -272,17 +276,19 @@ function updateStats() {
     } else { document.getElementById('richestPlayer').innerText = '-'; }
 }
 
-// ===== ВКЛАДКИ ПРАВИЛ =====
+// ===== ДИНАМИЧЕСКИЕ ВКЛАДКИ ПРАВИЛ =====
 function renderRulesTabs() {
     const container = document.getElementById('rulesTabsContainer');
+    const contentArea = document.getElementById('rulesContentArea');
     if (!container) return;
     container.innerHTML = '';
     if (!rulesTabs.length) rulesTabs = [{ name: "Правила", content: "Нет данных" }];
+    const canEditRules = (accessLevel === 'admin');
     rulesTabs.forEach((tab, idx) => {
         const btn = document.createElement('button');
         btn.className = 'rule-tab';
         if (idx === 0) btn.classList.add('active');
-        btn.innerHTML = `${escapeHtml(tab.name)} ${accessLevel === 'user' ? `<span class="delete-tab" data-idx="${idx}">🗑️</span>` : ''}`;
+        btn.innerHTML = `${escapeHtml(tab.name)} ${canEditRules ? `<span class="delete-tab" data-idx="${idx}">🗑️</span>` : ''}`;
         btn.onclick = (e) => {
             if (e.target.classList.contains('delete-tab')) return;
             document.querySelectorAll('.rule-tab').forEach(b => b.classList.remove('active'));
@@ -290,7 +296,7 @@ function renderRulesTabs() {
             showRuleContent(idx);
         };
         container.appendChild(btn);
-        if (accessLevel === 'user') {
+        if (canEditRules) {
             const delSpan = btn.querySelector('.delete-tab');
             if (delSpan) delSpan.onclick = (e) => { e.stopPropagation(); deleteRuleTab(idx); };
         }
@@ -302,12 +308,12 @@ function showRuleContent(index) {
     const tab = rulesTabs[index];
     if (!tab) return;
     let html = `<div class="rules-editor"><div class="rules-header-editor">`;
-    if (accessLevel === 'user') {
+    if (accessLevel === 'admin') {
         html += `<button class="btn-sm edit-tab-btn" data-idx="${index}">✏️ Редактировать вкладку</button>`;
     }
     html += `</div><div class="rules-preview">${convertMarkupToHtml(tab.content)}</div></div>`;
     contentArea.innerHTML = html;
-    if (accessLevel === 'user') {
+    if (accessLevel === 'admin') {
         const editBtn = contentArea.querySelector('.edit-tab-btn');
         if (editBtn) editBtn.onclick = () => openEditTabModal(index);
     }
@@ -357,6 +363,7 @@ function closeEditTabModal() {
     currentEditTabIndex = null;
 }
 
+// ===== ВСПОМОГАТЕЛЬНЫЕ =====
 function escapeHtml(str) { return str?.replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m])) || ''; }
 function showToast(msg, type='success') {
     const toast = document.getElementById('toast');
@@ -386,4 +393,5 @@ function setupTabs() {
         });
     });
 }
+
 init();
