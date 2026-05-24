@@ -1,8 +1,4 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+* { margin: 0; padding: 0; box-sizing: border-box; }
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
@@ -10,11 +6,9 @@ body {
     min-height: 100vh;
     padding: 20px;
 }
-.container {
-    max-width: 1400px;
-    margin: 0 auto;
-    position: relative;
-}
+.container { max-width: 1400px; margin: 0 auto; position: relative; }
+
+/* Виджет входа */
 .login-widget {
     position: absolute;
     top: 20px;
@@ -44,23 +38,9 @@ body {
 .access-badge.admin { background: #4caf50; }
 .access-badge.user { background: #ff9800; }
 .access-badge.view { background: #f44336; }
-header {
-    text-align: center;
-    margin-bottom: 30px;
-}
-h1 {
-    background: linear-gradient(135deg, #ffd89b, #c7e9fb);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    font-size: 2.5rem;
-}
-.tabs {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    margin-bottom: 25px;
-}
+
+/* Табы */
+.tabs { display: flex; gap: 10px; justify-content: center; margin-bottom: 25px; }
 .tab-btn {
     background: rgba(255,255,255,0.1);
     border: none;
@@ -70,21 +50,12 @@ h1 {
     font-size: 16px;
     cursor: pointer;
 }
-.tab-btn.active {
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    box-shadow: 0 0 15px rgba(102,126,234,0.5);
-}
-.tab-content {
-    display: none;
-}
-.tab-content.active {
-    display: block;
-    animation: fadeIn 0.3s;
-}
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
+.tab-btn.active { background: linear-gradient(135deg, #667eea, #764ba2); box-shadow: 0 0 15px rgba(102,126,234,0.5); }
+.tab-content { display: none; }
+.tab-content.active { display: block; animation: fadeIn 0.3s; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Облачный статус */
 .cloud-status {
     background: rgba(0,0,0,0.5);
     border-radius: 20px;
@@ -95,16 +66,11 @@ h1 {
     gap: 15px;
     justify-content: center;
 }
-.status-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    display: inline-block;
-}
+.status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
 .status-dot.online { background: #4caf50; box-shadow: 0 0 5px #4caf50; }
-.status-dot.offline { background: #f44336; box-shadow: 0 0 5px #f44336; }
+.status-dot.offline { background: #f44336; }
 .status-dot.syncing { background: #ff9800; animation: pulse 1s infinite; }
-@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.5;} }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
 .mini-btn, .btn-sm {
     background: rgba(255,255,255,0.2);
     border: none;
@@ -113,6 +79,8 @@ h1 {
     color: white;
     cursor: pointer;
 }
+
+/* Toolbar */
 .toolbar {
     display: flex;
     flex-wrap: wrap;
@@ -140,14 +108,9 @@ h1 {
     cursor: pointer;
 }
 .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102,126,234,0.4); }
-.btn-secondary {
-    background: #3a3a4a;
-    border: none;
-    padding: 8px 20px;
-    border-radius: 30px;
-    color: white;
-    cursor: pointer;
-}
+.btn-secondary { background: #3a3a4a; border: none; padding: 8px 20px; border-radius: 30px; color: white; cursor: pointer; }
+
+/* Статистика */
 .stats-grid {
     display: flex;
     justify-content: space-around;
@@ -165,21 +128,16 @@ h1 {
 }
 .stat-icon { font-size: 32px; }
 .stat-value { font-size: 28px; font-weight: bold; color: #ffd966; }
+
+/* Таблица */
 .table-container {
     background: rgba(255,255,255,0.05);
     backdrop-filter: blur(10px);
     border-radius: 20px;
     overflow-x: auto;
 }
-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-th, td {
-    padding: 14px;
-    text-align: left;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-}
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 14px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.1); }
 th { background: rgba(0,0,0,0.3); color: #ffd966; }
 tr:hover { background: rgba(255,255,255,0.05); }
 .estate {
@@ -202,10 +160,7 @@ tr:hover { background: rgba(255,255,255,0.05); }
     display: inline-block;
     margin: 2px;
 }
-.action-buttons {
-    display: flex;
-    gap: 8px;
-}
+.action-buttons { display: flex; gap: 8px; }
 .action-btn {
     background: none;
     border: none;
@@ -217,19 +172,10 @@ tr:hover { background: rgba(255,255,255,0.05); }
 .action-edit { color: #ffd966; }
 .action-diamond { color: #4facfe; }
 .action-delete { color: #ff6b6b; }
-.action-btn:hover { background: rgba(255,255,255,0.1); }
 
-/* Правила */
-.rules-header {
-    background: rgba(0,0,0,0.5);
-    border-radius: 20px 20px 0 0;
-    padding: 10px 20px;
-}
-.rules-tabs {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
+/* Вкладки правил */
+.rules-header { background: rgba(0,0,0,0.5); border-radius: 20px 20px 0 0; padding: 10px 20px; }
+.rules-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
 .rule-tab {
     background: rgba(255,255,255,0.1);
     border: none;
@@ -241,16 +187,13 @@ tr:hover { background: rgba(255,255,255,0.05); }
     align-items: center;
     gap: 8px;
 }
-.rule-tab.active {
-    background: linear-gradient(135deg, #667eea, #764ba2);
-}
+.rule-tab.active { background: linear-gradient(135deg, #667eea, #764ba2); }
 .rule-tab .delete-tab {
     background: none;
     border: none;
     color: #ff6b6b;
     cursor: pointer;
     font-weight: bold;
-    margin-left: 5px;
 }
 .rules-content-area {
     background: rgba(0,0,0,0.3);
@@ -258,26 +201,14 @@ tr:hover { background: rgba(255,255,255,0.05); }
     padding: 20px;
     min-height: 300px;
 }
-.rules-editor {
-    background: #1e1e2f;
-    border-radius: 16px;
-    padding: 20px;
-}
-.rules-editor textarea {
-    width: 100%;
-    background: #2a2a3a;
-    color: white;
-    border: none;
-    border-radius: 12px;
-    padding: 12px;
-    font-family: monospace;
-}
+.rules-editor { background: #1e1e2f; border-radius: 16px; padding: 20px; }
 .color-red { color: #ff6b6b; }
 .color-green { color: #6bff6b; }
 .color-gold { color: #ffd966; }
 .color-cyan { color: #6bcfff; }
 .color-white { color: white; }
 
+/* Модалки */
 .modal {
     display: none;
     position: fixed;
@@ -297,34 +228,12 @@ tr:hover { background: rgba(255,255,255,0.05); }
     width: 500px;
     max-width: 90%;
 }
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    padding: 20px 24px;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-}
-.close-modal {
-    background: none;
-    border: none;
-    font-size: 28px;
-    color: #aaa;
-    cursor: pointer;
-}
+.modal-header { display: flex; justify-content: space-between; padding: 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+.close-modal { background: none; border: none; font-size: 28px; color: #aaa; cursor: pointer; }
 .modal-body { padding: 24px; }
-.modal-footer {
-    padding: 16px 24px;
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    border-top: 1px solid rgba(255,255,255,0.1);
-}
-.form-group {
-    margin-bottom: 20px;
-}
-.form-group label {
-    display: block;
-    margin-bottom: 6px;
-}
+.modal-footer { padding: 16px 24px; display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid rgba(255,255,255,0.1); }
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; margin-bottom: 6px; }
 .form-group input, .form-group select, .form-group textarea {
     width: 100%;
     padding: 10px;
@@ -333,10 +242,13 @@ tr:hover { background: rgba(255,255,255,0.05); }
     border-radius: 12px;
     color: white;
 }
-.input-group {
-    display: flex;
-    gap: 10px;
+.diamond-controls .control-group {
+    background: rgba(0,0,0,0.3);
+    padding: 15px;
+    border-radius: 16px;
+    margin-bottom: 15px;
 }
+.input-group { display: flex; gap: 10px; }
 .toast {
     position: fixed;
     bottom: 20px;

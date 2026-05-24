@@ -1,4 +1,3 @@
-// ===== ХРАНИЛИЩЕ НА JSONBOX.IO (автосоздание бокса) =====
 let currentBoxUrl = null;
 
 async function initStorage() {
@@ -28,23 +27,28 @@ async function initStorage() {
 
 async function loadFromCloud() {
     if (!currentBoxUrl) await initStorage();
-    updateCloudStatus('syncing', 'Загрузка...');
-    const response = await fetch(currentBoxUrl);
-    if (response.status === 404) return { players: [], rulesTabs: [] };
-    let data = await response.json();
-    if (Array.isArray(data)) {
-        const players = data.map(({ _id, _createdOn, ...p }) => p);
-        return { players, rulesTabs: [] };
+    try {
+        updateCloudStatus('syncing', 'Загрузка...');
+        const response = await fetch(currentBoxUrl);
+        if (response.status === 404) return { players: [], rulesTabs: [] };
+        let data = await response.json();
+        if (Array.isArray(data)) {
+            const players = data.map(({ _id, _createdOn, ...p }) => p);
+            return { players, rulesTabs: [] };
+        }
+        if (data && typeof data === 'object') {
+            const { _id, _createdOn, ...clean } = data;
+            if (!clean.rulesTabs) clean.rulesTabs = [
+                { name: "Общие правила", content: "Приветствуем!\n\n[red]Запрещено[/red] гриферить.\n**Уважайте** других." },
+                { name: "Экономика", content: "Валюта – алмазы.\n[gold]Торгуйте[/gold]." }
+            ];
+            return clean;
+        }
+        return { players: [], rulesTabs: [] };
+    } catch (e) {
+        updateCloudStatus('offline', 'Ошибка');
+        throw e;
     }
-    if (data && typeof data === 'object') {
-        const { _id, _createdOn, ...clean } = data;
-        if (!clean.rulesTabs) clean.rulesTabs = [
-            { name: "Общие правила", content: "Приветствуем!\n\n[red]Запрещено[/red] гриферить.\n**Уважайте** других." },
-            { name: "Экономика", content: "Валюта – алмазы.\n[gold]Торгуйте[/gold]." }
-        ];
-        return clean;
-    }
-    return { players: [], rulesTabs: [] };
 }
 
 async function saveToCloudFull(data) {

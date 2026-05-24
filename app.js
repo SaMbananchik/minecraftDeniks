@@ -1,13 +1,13 @@
-// ===== ОСНОВНАЯ ЛОГИКА =====
 let players = [];
 let rulesTabs = [];
 let currentEditNick = null;
 let currentDiamondPlayer = null;
 let currentEditTabIndex = null;
-let accessLevel = 'view';   // 'view', 'user', 'admin'
+
+let accessLevel = 'view';
 let accessMessage = 'Режим просмотра';
 
-// Пароли: DonaldCapcap — полный доступ (admin), QwertyTrump — только игроки (user)
+// Пароли: DonaldCapcap — полный доступ, QwertyTrump — только игроки (без алмазов)
 const PASSWORDS = {
     'DonaldCapcap': { level: 'admin', allowDiamonds: true, allowFull: true },
     'QwertyTrump': { level: 'user', allowDiamonds: false, allowFull: false }
@@ -15,17 +15,16 @@ const PASSWORDS = {
 
 const ESTATE_LIST = ['Крестьянин', 'Горожанин', 'Элит Горожанин', 'Дворянин', 'Высшая власть'];
 
-// Глобальные данные
 let appData = { players: [], rulesTabs: [] };
 
 // ===== ФУНКЦИИ ВХОДА =====
 function checkPassword(password) {
     const entry = PASSWORDS[password];
-    if (!entry) return { success: false, level: 'view', message: 'Неверный пароль' };
+    if (!entry) return { success: false, level: 'view' };
     return { success: true, level: entry.level, allowDiamonds: entry.allowDiamonds };
 }
 
-function setAccess(level) {
+function setAccess(level, allowDiamonds = false) {
     accessLevel = level;
     if (level === 'admin') accessMessage = 'Полный доступ (админ)';
     else if (level === 'user') accessMessage = 'Доступ к игрокам (без алмазов)';
@@ -37,21 +36,20 @@ function setAccess(level) {
 }
 
 function applyAccessRestrictions() {
+    const isAdmin = accessLevel === 'admin';
+    const isUser = accessLevel === 'user';
+    const canEditPlayers = isAdmin || isUser;
     const createBtn = document.getElementById('createBtn');
-    if (createBtn) createBtn.style.display = (accessLevel !== 'view') ? 'block' : 'none';
-    document.body.classList.toggle('view-mode', accessLevel === 'view');
-    document.body.classList.toggle('user-mode', accessLevel === 'user');
-    document.body.classList.toggle('admin-mode', accessLevel === 'admin');
+    if (createBtn) createBtn.style.display = canEditPlayers ? 'block' : 'none';
     const toolsDiv = document.getElementById('rulesEditTools');
-    if (toolsDiv) toolsDiv.style.display = (accessLevel !== 'view') ? 'block' : 'none';
+    if (toolsDiv) toolsDiv.style.display = isUser ? 'flex' : 'none';
     renderTable();
-    renderRulesTabs(); // перерисовываем вкладки (кнопки удаления/редактирования)
 }
 
 function login(password) {
     const result = checkPassword(password);
     if (result.success) {
-        setAccess(result.level);
+        setAccess(result.level, result.allowDiamonds);
         showToast(`Вход выполнен. Режим: ${accessMessage}`, 'success');
     } else {
         setAccess('view');
@@ -59,15 +57,15 @@ function login(password) {
     }
 }
 
-// Обработчики виджета входа
 document.getElementById('loginBtnWidget').onclick = () => {
-    login(document.getElementById('passwordInputWidget').value);
+    const pwd = document.getElementById('passwordInputWidget').value;
+    login(pwd);
 };
 document.getElementById('passwordInputWidget').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') login(e.target.value);
 });
 
-// ===== ЗАГРУЗКА И СОХРАНЕНИЕ =====
+// ===== ЗАГРУЗКА ДАННЫХ =====
 async function init() {
     await initStorage();
     await refreshData();
@@ -115,17 +113,17 @@ async function saveToCloud() {
         appData.players = players;
         appData.rulesTabs = rulesTabs;
         await saveToCloudFull(appData);
-        showToast('Сохранено', 'success');
+        showToast('Сохранено в облако', 'success');
     } catch (error) {
         showToast('Ошибка сохранения', 'error');
     }
 }
 
-// ===== ПРОВЕРКА ПРАВ ДЛЯ ДЕЙСТВИЙ =====
-function requireAuth(actionCallback, requiredLevel = 'any', needDiamonds = false) {
+// ===== УПРАВЛЕНИЕ ИГРОКАМИ =====
+function requireAuth(actionCallback, requiredLevel = 'any', allowDiamonds = false) {
     if (accessLevel === 'admin') { actionCallback(); return; }
     if (accessLevel === 'user' && requiredLevel !== 'admin') {
-        if (!needDiamonds) { actionCallback(); return; }
+        if (!allowDiamonds) { actionCallback(); return; }
         else { showToast('Недостаточно прав для изменения алмазов', 'error'); return; }
     }
     showToast('Требуется вход с соответствующими правами', 'error');
@@ -151,7 +149,7 @@ function openEditModalInternal(nickname) {
     const player = players.find(p => p.nickname === nickname);
     if (!player) return;
     currentEditNick = nickname;
-    document.getElementById('modalTitle').innerText = '✏️ Редактировать';
+    document.getElementById('modalTitle').innerText = '✏️ Редактировать игрока';
     document.getElementById('playerNick').value = player.nickname;
     document.getElementById('playerNick').disabled = true;
     document.getElementById('playerEstate').value = player.estate;
@@ -214,23 +212,24 @@ function addDiamonds() {
     const amount = parseInt(document.getElementById('addDiamonds').value) || 0;
     if (amount <= 0) return;
     const player = players.find(p => p.nickname === currentDiamondPlayer);
-    if (player) { player.diamonds += amount; saveToCloud(); renderTable(); updateStats(); closeDiamondModal(); showToast(`+${amount} алмазов`, 'success'); }
+    if (player) { player.diamonds += amount; saveToCloud(); renderTable(); updateStats(); closeDiamondModal(); showToast(`Добавлено ${amount} алмазов`, 'success'); }
 }
 function removeDiamonds() {
     const amount = parseInt(document.getElementById('removeDiamonds').value) || 0;
     if (amount <= 0) return;
     const player = players.find(p => p.nickname === currentDiamondPlayer);
-    if (player) { player.diamonds = Math.max(0, player.diamonds - amount); saveToCloud(); renderTable(); updateStats(); closeDiamondModal(); showToast(`-${amount} алмазов`, 'success'); }
+    if (player) { player.diamonds = Math.max(0, player.diamonds - amount); saveToCloud(); renderTable(); updateStats(); closeDiamondModal(); showToast(`Убрано ${amount} алмазов`, 'success'); }
 }
 function setDiamonds() {
     const amount = parseInt(document.getElementById('setDiamonds').value) || 0;
     if (amount < 0) return;
     const player = players.find(p => p.nickname === currentDiamondPlayer);
-    if (player) { player.diamonds = amount; saveToCloud(); renderTable(); updateStats(); closeDiamondModal(); showToast(`Алмазы = ${amount}`, 'success'); }
+    if (player) { player.diamonds = amount; saveToCloud(); renderTable(); updateStats(); closeDiamondModal(); showToast(`Алмазы установлены: ${amount}`, 'success'); }
 }
 function closeModal() { document.getElementById('playerModal').classList.remove('active'); }
 function closeDiamondModal() { document.getElementById('diamondModal').classList.remove('active'); }
 
+// ===== РЕНДЕР ТАБЛИЦЫ =====
 function renderTable() {
     const search = document.getElementById('searchInput')?.value.toLowerCase() || '';
     const estateFilter = document.getElementById('estateFilter')?.value || 'all';
@@ -247,7 +246,7 @@ function renderTable() {
     });
     const tbody = document.getElementById('tableBody');
     if (!filtered.length) { tbody.innerHTML = '<tr><td colspan="6" class="loading">Нет игроков</td></tr>'; return; }
-    const canEdit = (accessLevel !== 'view');
+    const canEdit = (accessLevel === 'admin' || accessLevel === 'user');
     tbody.innerHTML = filtered.map((p,i) => `
         <tr>
             <td>${i+1}</td>
@@ -273,7 +272,7 @@ function updateStats() {
     } else { document.getElementById('richestPlayer').innerText = '-'; }
 }
 
-// ===== ДИНАМИЧЕСКИЕ ВКЛАДКИ ПРАВИЛ =====
+// ===== ВКЛАДКИ ПРАВИЛ =====
 function renderRulesTabs() {
     const container = document.getElementById('rulesTabsContainer');
     if (!container) return;
@@ -283,7 +282,7 @@ function renderRulesTabs() {
         const btn = document.createElement('button');
         btn.className = 'rule-tab';
         if (idx === 0) btn.classList.add('active');
-        btn.innerHTML = `${escapeHtml(tab.name)} ${accessLevel !== 'view' ? `<span class="delete-tab" data-idx="${idx}">🗑️</span>` : ''}`;
+        btn.innerHTML = `${escapeHtml(tab.name)} ${accessLevel === 'user' ? `<span class="delete-tab" data-idx="${idx}">🗑️</span>` : ''}`;
         btn.onclick = (e) => {
             if (e.target.classList.contains('delete-tab')) return;
             document.querySelectorAll('.rule-tab').forEach(b => b.classList.remove('active'));
@@ -291,7 +290,7 @@ function renderRulesTabs() {
             showRuleContent(idx);
         };
         container.appendChild(btn);
-        if (accessLevel !== 'view') {
+        if (accessLevel === 'user') {
             const delSpan = btn.querySelector('.delete-tab');
             if (delSpan) delSpan.onclick = (e) => { e.stopPropagation(); deleteRuleTab(idx); };
         }
@@ -302,13 +301,13 @@ function showRuleContent(index) {
     const contentArea = document.getElementById('rulesContentArea');
     const tab = rulesTabs[index];
     if (!tab) return;
-    let html = `<div class="rules-editor">`;
-    if (accessLevel !== 'view') {
-        html += `<div class="rules-header-editor" style="margin-bottom: 10px;"><button class="btn-sm edit-tab-btn" data-idx="${index}">✏️ Редактировать вкладку</button></div>`;
+    let html = `<div class="rules-editor"><div class="rules-header-editor">`;
+    if (accessLevel === 'user') {
+        html += `<button class="btn-sm edit-tab-btn" data-idx="${index}">✏️ Редактировать вкладку</button>`;
     }
-    html += `<div class="rules-preview">${convertMarkupToHtml(tab.content)}</div></div>`;
+    html += `</div><div class="rules-preview">${convertMarkupToHtml(tab.content)}</div></div>`;
     contentArea.innerHTML = html;
-    if (accessLevel !== 'view') {
+    if (accessLevel === 'user') {
         const editBtn = contentArea.querySelector('.edit-tab-btn');
         if (editBtn) editBtn.onclick = () => openEditTabModal(index);
     }
@@ -353,9 +352,11 @@ function addRuleTab() {
     renderRulesTabs();
     showToast('Вкладка добавлена', 'success');
 }
-function closeEditTabModal() { document.getElementById('editRuleTabModal').classList.remove('active'); currentEditTabIndex = null; }
+function closeEditTabModal() {
+    document.getElementById('editRuleTabModal').classList.remove('active');
+    currentEditTabIndex = null;
+}
 
-// ===== ВСПОМОГАТЕЛЬНЫЕ =====
 function escapeHtml(str) { return str?.replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m])) || ''; }
 function showToast(msg, type='success') {
     const toast = document.getElementById('toast');
@@ -385,5 +386,4 @@ function setupTabs() {
         });
     });
 }
-
 init();
